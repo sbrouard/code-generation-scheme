@@ -1,0 +1,15 @@
+#lang racket
+
+
+(require "./algo_scheme.rkt")
+
+
+
+;;;;;;;;;;;;;;;;  generation code C ;;;;;;;;;;;;;;;;
+
+
+
+;;;;;;;; in-place ;;;;;;;;;;;;;;;;
+
+
+;;;;;;;; out-place ;;;;;;;;;;;;;;;

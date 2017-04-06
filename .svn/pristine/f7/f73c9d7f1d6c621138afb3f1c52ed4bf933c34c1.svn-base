@@ -1,0 +1,39 @@
+#lang racket
+
+(require "verif_simmae.rkt")
+
+
+
+;(define (exponentiation-stock-op x l lcomplete op) ; code magnifique
+;  (define n (result (last l) lcomplete))
+;  (cond [(not (is-addlist? l)) (raise "ERROR : require an add-list")]
+;        ;[(not (null? (cdr (last l)))) (cdr (last l))] -> a modifier
+;;        [(let ([n (result (last l) lcomplete)])
+;;           (not (= n -1))) n]
+;        [(not (= -1 n)) n]
+;        [(null? (cdr l)) x]
+;        [else 
+;         (let ([p (sum-of l (last l))])
+;           (op (cond [(= 0 (car p)) 1] ; ligne probablement inutile
+;                    [(= 1 (car p)) x]
+;                    [else (let ([res (exponentiation-stock-op x (delete-greater (car p) l) lcomplete op)])
+;                            (stock res (last l) lcomplete) res)])
+;              (cond [(= 1 (cadr p)) x]
+;                    [else (let ([res (exponentiation-stock-op x (delete-greater (cadr p) l) lcomplete op)])
+;                            (stock res (last l) lcomplete) res)])))]))
+;
+;
+;(define (exponentiation-init-op x l op)
+;  (let ([ll (create-list-of-list l l)])
+;    (exponentiation-stock-op x l ll op)))
+;
+;(exponentiation-init-op 3 '(1 2 3) *) ;; 3³=27 
+;(exponentiation-init-op 2 '(1 2 3 5 8) *) ;; 2⁸=256
+
+
+;;-----------------------------generation---------------------------------
+
+(define (exp n op)
+    (define (machin x)
+      42)
+    machin)      

@@ -1,0 +1,99 @@
+#lang racket
+
+(require "algo_scheme.rkt")
+
+
+
+;;-----------TEST OF CREATION OF A SUMLIST--------------------------
+
+(define (test-create-sumlist)
+  (printf "Test of create-sumlist ... ")
+  (cond [(not (equal? (create-sumlist '(1 2 3 5) 8) '(8 3 5))) (printf "FAILED")]
+        [(not (equal? (create-sumlist '(1 2 3 5) 6) '(6 1 5))) (printf "FAILED")]
+        [(not (equal? (create-sumlist '(1 2 3 5) 4) '(4 1 3))) (printf "FAILED")]
+        [(not (equal? (create-sumlist '(1 2 3 5) 2) '(2 1 1))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(define (test-addlist2list-of-list)
+  (printf "Test of addlist2list-of-list ... ")
+  (cond [(not (equal? (addlist2list-of-list '(1 2 3 5) '() '()) '((1 0 0) (2 1 1) (3 1 2) (5 2 3)))) (printf "FAILED")]
+        [(not (equal? (addlist2list-of-list '(1) '() '()) '((1 0 0)))) (printf "FAILED")]
+        [(not (null? (addlist2list-of-list '() '() '()))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(test-create-sumlist)
+(test-addlist2list-of-list)
+
+
+
+
+;;----------------TEST OF CODE GENERATION--------------------------
+
+(define (test-constr-let)
+  (printf "Test of constr-let ... ")
+  (cond [(not (equal? (constr-let '* '((1 0 0) (2 1 1) (3 1 2)) 'x) 
+                      '((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2))) ))
+         (printf "FAILED")]
+        
+        [(not (equal? (constr-let '* '((1 0 0) (2 1 1) (3 1 2) (5 2 3)) 'x) 
+                      '((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3))) ))
+         (printf "FAILED")]
+        
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+
+
+(define (test-constr-function)
+  (printf "Test of constr-function ... ")
+  (cond [(not (equal? (constr-function 5 '* 'x
+                                       '((1 0 0) (2 1 1) (3 1 2) (5 2 3)))
+                      '(define (exp5 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3))) x5))))
+         (printf "FAILED")]
+        
+        [(not (equal? (constr-function 7 '* 'x
+                                       '((1 0 0) (2 1 1) (3 1 2) (5 2 3) (7 2 5)))
+                      '(define (exp7 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)) (x7 (* x2 x5))) x7))))
+         (printf "FAILED")]
+        
+         [(not (equal? (constr-function 12 '* 'x
+                                       '((1 0 0) (2 1 1) (3 1 2) (5 2 3) (7 2 5) (12 5 7)))
+                      '(define (exp12 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)) (x7 (* x2 x5)) (x12 (* x5 x7))) x12))))
+         (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+
+(define (test-generation)
+  (printf "Test of generation ... ")
+  (cond [(not (equal? (generation '* '(1 2 3 5)) 
+                      '(define (exp5 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3))) x5))))
+         (printf "FAILED")]
+        
+        [(not (equal? (generation '* '(1 2 3 5 7)) 
+                       '(define (exp7 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)) (x7 (* x2 x5))) x7))))
+         (printf "FAILED")]
+        
+        [(not (equal? (generation '* '(1 2 3 5 7 12)) 
+                     '(define (exp12 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)) (x7 (* x2 x5)) (x12 (* x5 x7))) x12))))
+         (printf "FAILED")]
+                
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+
+(test-constr-let)
+(test-constr-function)
+(test-generation)
+
+

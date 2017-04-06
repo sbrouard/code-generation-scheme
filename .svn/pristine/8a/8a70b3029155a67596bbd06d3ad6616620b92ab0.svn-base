@@ -1,0 +1,120 @@
+#lang racket
+
+(require "verif.rkt")
+
+
+;;;;;;;;;;;  Test of verif  ;;;;;;;;;;;;;;;;;;;;;
+
+
+(define (test-is-growing)
+  (printf "Test of is-growing? ... ")
+  (cond [(not (is-growing? '(1 2 3 4))) (printf "FAILED")]
+        [(is-growing? '( 4 2 3 5)) (printf "FAILED")]
+        [(not (is-growing? '())) (printf "FAILED")]
+        [(is-growing? '(1 2 5 3 8 9)) (printf "FAILED")]
+        [(not (is-growing? '(42)))  (printf "FAILED")]
+        [(is-growing? '(2 3 4 5 1)) (printf "FAILED")]
+        [(is-growing? '(1 2 2 3)) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+
+(define (test-is-sum)
+  (printf "Test of is-sum? ... ")
+  (cond [(not (is-sum? '(1 2 4 5) 8)) (printf "FAILED")]
+        [(not (is-sum? '(1 2 3) 5)) (printf "FAILED")]
+        [(is-sum? '(1 2 4 5) 11) (printf "FAILED")]
+        [(is-sum? '() 3) (printf "FAILED")]
+        [(is-sum? '() 1) (printf "FAILED")]
+        [(not (is-sum? '(1) 2)) (printf "FAILED")]
+        [(not (is-sum? '(2 4 6) 8)) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(define (test-all-are-sum)
+  (printf "Test of all-are-sum? ... ")
+  (cond [(not (all-are-sum? '(1) '(2 3 6 7 10))) (printf "FAILED")]
+        [(all-are-sum? '() '(1 2 3)) (printf "FAILED")]
+        [(all-are-sum? '(1) '(2 5 7)) (printf "FAILED")]
+        [(not (all-are-sum? '(1) '())) (printf "FAILED")]
+        [(not (all-are-sum? '(1) '(2))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+(define (test-is-addlist)
+  (printf "Test of is-addlist? ... ")
+  (cond [(not (is-addlist? '(1 2 4 5 10 20 21 42 43 86 87))) (printf "FAILED")]
+        [(is-addlist? '(2 4 6 8)) (printf "FAILED")]
+        [(is-addlist? '(1 2 5)) (printf "FAILED")]
+        [(is-addlist? '()) (printf "FAILED")]
+        [(not (is-addlist? '(1))) (printf "FAILED")]
+        [(is-addlist? '(1 4 3 0)) (printf "FAILED")]
+        [(is-addlist? '(1 2 2 4)) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+(test-is-growing)
+(test-is-sum)
+(test-all-are-sum)
+(test-is-addlist)
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;; Tests of exponentiation ;;;;;;;;;;;;;;;;;;;;;;
+
+
+(define (test-replace)
+  (printf "Test of replace ... ")
+  (cond [(not (equal? (replace 2 42 '(1 2 3)) '(1 42 3))) (printf "FAILED")]
+        [(not (equal? (replace 2 '(2 4) '(1 2 3)) '(1 (2 4) 3))) (printf "FAILED")]
+        [(not (equal? (replace 2 '(2) '(1 2 3)) '(1 (2) 3))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+(define (test-replace-list-of-list)
+  (printf "Test of replace list-of-list ... ")
+  (cond [(not (equal? (replace-list-of-list '(2) 3 '((1) (2) (3))) '((1) 3 (3)))) (printf "FAILED")]
+        [(not (equal? (replace-list-of-list '(3) '(3 2 1) '((1) (2) (3))) '((1) (2) (3 2 1)))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+
+(define (test-create-list-of-list)
+  (printf "Test of create-list-of-list ... ")
+  (cond [(not (equal? (create-list-of-list '(1 2 3) '(1 2 3)) '((1) (2) (3)))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(define (test-result)
+  (printf "Test of result ... ")
+  (cond [(not (= -1 (result 2 '((1) (2) (3))))) (printf "FAILED")]
+        [(not (= 3 (result 2 '((1) (2 3) (3))))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(define (test-stock)
+  (printf "Test of stock ... ")
+  (cond [(not (equal? (stock 42 2 '((1) (2) (3))) '((1) (2 42) (3)))) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+
+(test-replace)
+(test-replace-list-of-list)
+(test-create-list-of-list)
+(test-result)
+(test-stock)

@@ -1,0 +1,111 @@
+#lang racket
+
+(provide create-sumlist)
+(provide addlist2list-of-list)
+
+;;;;;;; creation d'une liste de liste de type : '(1 2 3) -> '((1 0 0) (2 1 1) (3 2 1)) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; n = int of which we want to know of which two other int it is the sum
+;l = addlist with only elts smaller than n
+(define (create-sumlist l n)  ;; '(1) 2 -> '(2 1 1)
+  (cond [(null? l) (raise "ERROR : probably not an add-list")] 
+        [(= n (+ (car l) (last l))) (list n (car l) (last l))]
+        [(> n (+ (car l) (last l))) (create-sumlist (cdr l) n)]
+        [(< n (+ (car l) (last l))) (create-sumlist (remove (last l) l) n)]
+         ))
+
+;(create-sumlist '(1 2 3) 5)
+;addlist-fin = entire addlist at the begining, remove the first elmts until it is null
+;addlist-deb = at the begining = '(), add elts which have been removed in addlist-fin
+;l2return : list which is returned
+(define (addlist2list-of-list addlist-fin addlist-deb l2return)
+  (cond [(null? addlist-fin) l2return]
+        [(= 1 (car addlist-fin)) (addlist2list-of-list (cdr addlist-fin) '(1) '((1 0 0)))]
+        [else (addlist2list-of-list (cdr addlist-fin) (append addlist-deb 
+                                                              (list (car addlist-fin))) 
+                                    (append l2return 
+                                            (list (create-sumlist addlist-deb (car addlist-fin)))))]))
+       
+;(addlist2list-of-list '(1 2 3 5 7 10 12 13 17) '() '())
+
+
+
+
+
+
+
+
+
+
+
+;;-----------------------------generation---------------------------------
+
+
+; l is alist: '((1 0 0) (2 1 1) (3 2 1)) for example
+(define (constr-let op l x) 
+  (cond [(null? l) l]
+        [(= 1 (car (car l))) (cons 
+                              (cons (string->symbol (string-append "x" (number->string (car (car l))))) '(x)) ; x1 (x¹) (symbol) = 1
+                              (constr-let op (cdr l) x))]
+        [else (cons 
+               (cons (string->symbol (string-append "x" (number->string (car (car l))))) 
+                     (list (list op 
+                                 (string->symbol (string-append "x" (number->string (cadr (car l)))))
+                                 (string->symbol (string-append "x" (number->string(cadr (cdr (car l)))))))))
+               (constr-let op (cdr l) x))]))
+
+
+
+
+
+(define (constr-let-final op ldeb lfin x)
+  (if (null? lfin)
+      (append ldeb (list (car (last (last ldeb)))))
+      (constr-let-final op (append ldeb (list (car lfin))) (cdr lfin) x)))
+
+
+
+(define (gen2 op l)
+  (list 'lambda (list op 'x) 
+        (list 'let*
+        ;(constr-let-final (constr-let op (addlist2list-of-list l '() '()) 'x) '() 'x) 
+        (constr-let op (addlist2list-of-list l '() '()) 'x)
+        (string->symbol (string-append "x" (number->string(last l)))))))
+
+;(gen2 'mult '(1 2 3 5))
+
+
+
+(define (constr-function val op x l) ;;'(define (exp10 * x) (let* (x1 x) (x2 (* x1 x1)) (x3 (* x2 x1)) (x5 (* x3 x2)) x))
+  (let* ([nom (string->symbol (string-append "exp" (number->string val)))]
+         [name (cons 'define (cons (list nom op 'x)
+                                   (list (constr-let-final op (list 'let*) (list (constr-let op l 'x)) 'x))))])
+    name))
+
+
+;; Test with the parameters entered by hand
+(define l1 (constr-function 10 '* 2 '((1 0 0) (2 1 1) (3 2 1) (5 3 2)))) 
+l1
+
+;; General function to call
+(define (generation op l) ;; l = addlist
+  (constr-function (last l)op 'x (addlist2list-of-list l '() '())))
+
+;; Final test (call to the general function
+(define l2 (generation '* '(1 2 3 5)))
+l2
+
+
+
+
+
+
+
+
+;;;;;;;;;;;;; avec une lambda function ;;;;;;;;;;
+
+;(define-namespace-anchor anchor)
+;(define ns (namespace-anchor->namespace anchor))
+;(define (eval-expr expr) (eval expr ns))
+;
+;(eval-expr (gen2 'mult '(1 2 3 5)) * 2)

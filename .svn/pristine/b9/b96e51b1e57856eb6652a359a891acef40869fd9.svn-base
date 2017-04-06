@@ -1,0 +1,124 @@
+#lang racket
+
+
+(require "./algo_scheme.rkt")
+;(require "./verif.rkt")
+
+
+
+; replace in the list l the element elt by new
+; ex : (replace 2 42 '(1 2 3)) -> '(1 42 3)
+(define (replace-in-list elt new l) ;elt -> int (new -> list)
+  (cond [(null? l) l]
+        [(list? (car l)) (cons (car l) (replace elt new (cdr l)))]
+        [(equal? elt (car l)) (cons new (cdr l))]
+        [else (cons (car l) (replace-in-list elt new (cdr l)))]))
+
+
+(define (replace elt new alist)
+  (if (null? alist)
+      alist
+      (cons (replace-in-list elt new (car alist)) (replace elt new (cdr alist)))))
+
+
+;(replace  2 'x2 '((1 0 0) (2 1 1) (3 2 1)))
+
+;;;;;;;;;;;;;;;;  generation code C ;;;;;;;;;;;;;;;;
+
+(define (entete-file file)
+  (fprintf file "#include <stdio.h>\n")
+  (fprintf file "#include <stdlib.h>\n\n\n\n"))
+
+(define (entete-function file n)
+  (fprintf file "int exp~a(x){\n" n))
+
+
+
+; l = the end of an 'a-addlist'  ex : '((3 2 1) (5 3 2) (7 5 2))
+(define (is-reused-variable? n l)
+  (cond [(null? l) #f]
+        [(equal? n (cadr (car l))) #t]
+        [(equal? n (caddr (car l))) #t]
+        [else (is-reused-variable? n (cdr l))]))
+
+
+;(is-reused-variable? 2 '((3 2 1) (5 3 2)))
+;(is-reused-variable? 1 '((5 3 2) (8 5 3)))
+
+
+;new-variable : name of the variable where we put n ex : x5
+;alist  ex : '((1 0 0) (2 x1 x1) (3 x2 x1))
+;ex : (modify-variable-name '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x3 x3)) 3 'x2)
+; -> '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x2 x2))
+(define (modify-variable-name alist n new-variable)
+  (replace n new-variable alist))
+
+;(modify-variable-name '((1 0 0) (2 1 1) (3 2 1) (6 3 3)) 3 'x2)
+
+
+
+
+
+
+;;;;;;;; in-place ;;;;;;;;;;;;;;;;
+
+
+
+
+;;;;;;;; out-place ;;;;;;;;;;;;;;;
+
+; list  ex : '(3 x2 x1)
+(define (affectation-out list alist variable-list file)
+  (cond [(null? variable-list) 
+         (modify-variable-name alist (car list) (string->symbol (string-append "x" (number->string (car list)))))
+         (fprintf file "int ~a = ~a * ~a;\n" (string->symbol (string-append "x" (number->string (car list)))) (cadr list) (caddr list))
+         (let* ([variable-list (if (not (is-reused-variable? (cadr list) alist))
+                                  (cons (cadr list) variable-list)
+                                  variable-list)]
+                [variable-list (if (and (not (is-reused-variable? (caddr list) alist)) (not (equal? (cadr list) (caddr list))))
+                                  (cons (cadr list) variable-list)
+                                  variable-list)])
+           variable-list)
+           
+         ;(cons (string->symbol (string-append "x" (number->string (car list)))) variable-list)
+         ]
+        [else (modify-variable-name alist (car list) (car variable-list))
+              (remove (car variable-list) variable-list)
+              (fprintf file "~a = ~a * ~a;\n" (car variable-list)  (cadr list) (caddr list))
+              (remove (car variable-list) variable-list)]))
+  
+
+
+; alist == alist-end at the beginning
+(define (all-affectation-out alist variable-list file)
+  (cond [(not (null? alist)) (all-affectation-out (cdr alist) (affectation-out (car alist) alist variable-list file) file)]))
+      
+
+
+
+;write the total file needed in c in file
+(define (complete-file-out file list n)
+  (entete-file file)
+  (entete-function file n)
+  (all-affectation-out list '() n)
+  (fprintf file "}")
+  )
+
+
+
+
+
+;;;;;;;;;;;;;; test ;;;;;;;;;;;;;;;
+
+
+(define file (open-output-file "test.c"))
+;
+;(entete-file file)
+;(entete-function file 2)
+(affectation-out '(5 x3 x2) '((10 5 5) (15 10 5)) '() file)
+;;(affectation-out '(1 0 0) '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x3 x3)) (list (string->symbol (string-append "x" (number->string 42))) (string->symbol (string-append "x" (number->string 43)))))
+;;(all-affectation-out '((1 x 1) (2 x1 x1) (3 x2 x1) (6 x3 x3)) '())
+;;(all-affectation-out '((1 x 1) (2 1 1) (3 2 1) (6 3 3)) '() file)
+;;(complete-file-out file '((1 x 1) (2 1 1) (3 2 1) (6 3 3)) 2)
+;
+(close-output-port file)

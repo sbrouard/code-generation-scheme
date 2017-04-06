@@ -1,0 +1,81 @@
+#lang racket
+
+;(require "fichier") ; utiliser
+;(provide truc) ; fournir
+
+;; --------------Verif----------------------
+
+;;verifier que la liste est strictement croissante -> fonction specifique ? OK
+;;verif 1er elt=1  ->algo general  OK
+;;verif chaque elt est somme des precedent, 
+;puis le rajouter dans le liste des 1ers elts ->fonction is_sum OK
+
+
+(define (is-growing? l)
+  (cond [(null? l) #t]
+        [(null? (cdr l)) #t]
+        [(= (car l) (car (cdr l))) #f]
+        [(> (car l) (car (cdr l))) #f]
+        [else (is-growing? (cdr l))]))
+
+;(is-growing? '(1 2 3 4))
+;(is-growing? '( 4 2 3 5))
+;(is-growing? '())
+;(is-growing? '(1 2 5 3 8 9))
+;(is-growing? '(42))
+;(is-growing? '(2 3 4 5 1))
+;(is-growing? '(1 2 2 3))
+
+
+(define (is-sum? l x)
+  (cond [(null? l) #f]
+        [(= x (+ (car l) (last l))) #t]
+        [(< x (+ (car l) (last l))) (is-sum? (remove (last l) l) x)]
+        [(> x (+ (car l) (last l))) (is-sum? (cdr l) x)]
+        ))
+
+;(is-sum? '(1 2 4 5) 8)
+;(is-sum? '(1 2 3) 5)
+;(is-sum? '(1 2 4 5) 11)
+;(is-sum? '() 3)
+;(is-sum? '() 1)
+;(is-sum? '(1) 2)
+;(is-sum? '(2 4 6) 8)
+
+
+(define (all-are-sum? l1 l2) ;attention, l1 doit etre non vide (contient car de l et l 2 cdr de l)
+  (cond [(null? l2) #t]
+        [(null? l1) #f]
+        [(not (is-sum? l1 (car l2))) #f]
+        [else (all-are-sum? (append l1 (list (car l2))) (cdr l2))]))
+
+;(all-are-sum? '(1) '(2 3 6 7 10))
+;(all-are-sum? '() '(1 2 3))
+;(all-are-sum? '(1) '(2 5 7))
+;(all-are-sum? '(1) '())
+;(all-are-sum? '(1) '(2))
+
+
+(define (is-addlist? l)
+  (cond [(null? l) #f]
+        [(not (= 1 (car l))) #f]
+        [(not (is-growing? l)) #f]
+        [else (all-are-sum? (list (car l)) (cdr l))]))
+
+(time (is-addlist? '(1 2 3 6 7 10 20 40 80 87)))
+;(is-addlist? '(1 2 4 5 10 20 21 42 43 86 87))
+;(is-addlist? '(2 4 6 8))
+;(is-addlist? '(1 2 5))
+;(is-addlist? '())
+;(is-addlist? '(1))
+;(is-addlist? '(1 4 3 0))
+;(is-addlist? '(1 2 2 4))
+
+
+
+
+;; ---------exponentiation--------------------
+
+
+
+

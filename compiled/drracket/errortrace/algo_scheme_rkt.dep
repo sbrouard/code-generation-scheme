@@ -1,0 +1,1 @@
+("6.1.1" ("495882ee94d52aafbc94d0abb0825018b781bda5" . "ceab69df46e5b27c88ec606715e8da0616159d51") #"/net/malt/i/sbrouard/Documents/projets6/s6-codegen-1992/./generation.rkt" (collects #"racket" #"runtime-config.rkt") (collects #"racket" #"main.rkt") (collects #"errortrace" #"errortrace-key.rkt"))

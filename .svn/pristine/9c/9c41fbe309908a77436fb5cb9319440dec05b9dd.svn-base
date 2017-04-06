@@ -1,0 +1,99 @@
+#lang racket
+
+(define (gen-string-bin n)
+  (cond [(= n 1) '(1)]
+        [(even? n) (append (gen-string-bin (/ n 2)) (list n))]
+        [else (append (gen-string-bin (sub1 n)) (list n))]))
+
+
+(define (test-gen-bin)
+;  (and
+  (printf "1 : '(1)\n")
+  (printf "4 : '(1 2 4)\n")
+  (printf "87: '(1 2 4 5 10 20 21 42 43 86 87)\n")
+  (printf "5 : '(1 2 4 5)\n")
+  (printf "test:\n")
+  (values (gen-string-bin 1)
+          (gen-string-bin 4)
+          (gen-string-bin 87)
+          (gen-string-bin 5))
+  )
+
+;(test-gen-bin)
+
+
+(define (gen-string-unity n)
+  (cond [(= n 1) '(1)]
+        [(= n 2) '(1 2)]
+        [(= n 3) '(1 2 3)]
+        [(= n 4) '(1 2 4)]
+        [(= n 5) '(1 2 3 5)]
+        [(= n 6) '(1 2 4 6)]
+        [(= n 7) '(1 2 3 6 7)]
+        [(= n 8) '(1 2 4 8)]
+        [(= n 9) '(1 2 4 8 9)]
+        [(= n 0) '(1 2 3 5)]
+        ))
+
+;(gen-string-aux 4)
+
+(define (gen-string-compl n)
+  (cond [(= n 0) '()]
+        [(= n 1) '(2 3 5)]
+        [(= n 2) '(3 5)]
+        [(= n 3) '(5)]
+        [(= n 4) '(8)]
+        [(>= n 5) '()]
+        ))
+
+(define (gen-string-aux n)
+  (cond [(<= n 10) (gen-string-unity n)]
+        [else (append (gen-string-unity (modulo n 10)) (gen-string-compl (modulo n 10)) (map (lambda (x) (* x 10)) (gen-string-aux (quotient n 10))))]))
+
+;(gen-string-aux 47)
+
+(define (gen-string-complete n p)
+  (cond [(zero? p) '()]  
+        [else
+         (if (zero? (modulo (quotient n (expt 10 (sub1 p))) 10)) (gen-string-complete n (sub1 p)) 
+             (append (list (* (quotient n (expt 10 (sub1 p))) (expt 10 (sub1 p)))) (gen-string-complete n (sub1 p))))]))
+
+;(gen-string-complete 887 2)
+
+(define (power-10 n)
+  (if (< n 10) 0
+      (add1 (power-10 (quotient n 10)))))
+
+;(power-10 87)
+;(power-10 1)
+;(power-10 1000)
+
+
+(define (gen-string n)
+  (append (gen-string-aux n) (gen-string-complete n (power-10 n))))
+
+;(gen-string 87)
+;(gen-string 873)
+
+(define (test-gen-string)
+  (printf "1 : '(1)\n")
+  (printf "4 : '(1 2 4)\n")
+  (printf "87: '(1 2 3 6 7 10 20 40 80 87)\n")
+  (printf "953 : '(1 2 3 5 10 20 30 50 100 200 400 800 900 950 953)\n")
+  (printf "test:\n")
+  (values (gen-string 1)
+          (gen-string 4)
+          (gen-string 87)
+          (gen-string 953)))
+
+;(test-gen-string)
+
+;(define (compare-methods)
+;  (
+;
+(time (gen-string 800000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777777777777777770000000000000000000000000)) ;;plus lent que le binaire
+(time (gen-string-bin 800000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777777777777777770000000000000000000000000)) ;;meilleure version pour le moment
+
+;(gen-string-aux 80017)
+;(gen-string-complete 80017 4)
+;(gen-string 80017)

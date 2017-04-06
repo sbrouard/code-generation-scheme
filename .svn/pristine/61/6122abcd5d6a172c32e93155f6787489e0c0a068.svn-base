@@ -1,0 +1,111 @@
+#lang racket
+
+(provide create-sumlist)
+(provide addlist2list-of-list)
+
+(provide constr-let)
+(provide constr-let-final)
+(provide constr-function)
+(provide generation) ;; General function which generates the code
+
+
+;;----------- Creation d'une liste de liste de type : '(1 2 3) -> '((1 0 0) (2 1 1) (3 2 1)) ----------------
+
+
+
+;; l: addlist with only elements smaller than n
+;; Returns a list so that the first element is "n" and the sum of the two last elements equals "n"
+(define (create-sumlist l n)  ;; '(1) 2 -> '(2 1 1)
+  (cond [(null? l) (raise "ERROR : probably not an add-list")] 
+        [(= n (+ (car l) (last l))) (list n (car l) (last l))]
+        [(> n (+ (car l) (last l))) (create-sumlist (cdr l) n)]
+        [(< n (+ (car l) (last l))) (create-sumlist (remove (last l) l) n)]
+         ))
+
+
+;; addlist-fin: entire addlist at the begining, then the first element is removed until it is null
+;; addlist-deb: null at the begining, then elements which have been removed in addlist-fin are added in addlist-deb
+;; l2: null at the begining
+;; Returns the list "l2return" in which each element is a "create-sumlist"
+(define (addlist2list-of-list addlist-fin addlist-deb l2return)
+  (cond [(null? addlist-fin) l2return]
+        [(= 1 (car addlist-fin)) (addlist2list-of-list (cdr addlist-fin) '(1) '((1 0 0)))]
+        [else (addlist2list-of-list (cdr addlist-fin) (append addlist-deb 
+                                                              (list (car addlist-fin))) 
+                                    (append l2return 
+                                            (list (create-sumlist addlist-deb (car addlist-fin)))))]))
+
+
+
+
+
+
+
+
+
+;;-----------------------------Code Generation---------------------------------
+
+
+;; l must be an alist: '((1 0 0) (2 1 1) (3 1 2)) for example
+;; Returns the argument which is going to be given to the let*
+;; ex: '((1 0 0) (2 1 1) (3 1 2))  ->  ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)))
+(define (constr-let op l x) 
+  (cond [(null? l) l]
+        [(= 1 (car (car l))) (cons 
+                              (cons (string->symbol (string-append "x" (number->string 1))) '(x)) ;; (x1 x) because x¹=x
+                              (constr-let op (cdr l) x))]
+        [else (cons 
+               (cons (string->symbol (string-append "x" (number->string (car (car l))))) 
+                     (list (list op 
+                                 (string->symbol (string-append "x" (number->string (cadr (car l)))))
+                                 (string->symbol (string-append "x" (number->string(cadr (cdr (car l)))))))))
+               (constr-let op (cdr l) x))]))
+
+
+
+;; Concatenates "ldeb", "(list lfin)" and the last symbol of "lfin" in a list, in order to create a let*
+;; ex: ldeb=(list 'let*)
+;; ex: lfin=((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3)))
+;; ex: the last symbol of "lfin" is "x5"
+;; ex: The function returns '(let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3))) x5)
+(define (constr-let-final op ldeb lfin x)
+  (if (null? lfin)
+      (append ldeb (list (car (last (last ldeb)))))
+      (constr-let-final op (append ldeb (list (car lfin))) (cdr lfin) x)))
+
+
+;; Gives a name to the let*
+;; Returns the code to define the function expval (val being an int)
+;; ex: (constr-function 5 * x '((1 0 0) (2 1 1) (3 1 2)))  
+;;      ->  '(define (exp5 * x) (let* ((x1 x) (x2 (* x1 x1)) (x3 (* x1 x2)) (x5 (* x2 x3))) x5))
+(define (constr-function val op x l) ;;
+  (let* ([nom (string->symbol (string-append "exp" (number->string val)))]
+         [name (cons 'define (cons (list nom op 'x)
+                                   (list (constr-let-final op (list 'let*) (list (constr-let op l 'x)) 'x))))])
+    name))
+
+
+;;; Test with the parameters entered by hand
+;(define l1 (constr-function 5 '* 2 '((1 0 0) (2 1 1) (3 1 2) (5 2 3)))) 
+;l1
+
+;; General function to call
+(define (generation op l) ;; l = addlist
+  (constr-function (last l) op 'x (addlist2list-of-list l '() '())))
+
+;;; Final test (call to the general function
+;(define l2 (generation '* '(1 2 3 5)))
+;l2
+
+
+
+
+
+;; Essai avec une lambda fonction
+(define (gen2 op l)
+  (list 'lambda (list op 'x) 
+        (list 'let*
+        (constr-let op (addlist2list-of-list l '() '()) 'x)
+        (string->symbol (string-append "x" (number->string(last l)))))))
+
+;(gen2 'mult '(1 2 3 5))

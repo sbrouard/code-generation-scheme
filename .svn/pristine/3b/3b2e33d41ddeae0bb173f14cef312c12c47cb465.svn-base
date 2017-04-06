@@ -1,0 +1,140 @@
+#lang racket
+
+(require "verif_simmae.rkt")
+
+
+
+;(define (exponentiation-stock-op x l lcomplete op) ; code magnifique
+;  (define n (result (last l) lcomplete))
+;  (cond [(not (is-addlist? l)) (raise "ERROR : require an add-list")]
+;        ;[(not (null? (cdr (last l)))) (cdr (last l))] -> a modifier
+;;        [(let ([n (result (last l) lcomplete)])
+;;           (not (= n -1))) n]
+;        [(not (= -1 n)) n]
+;        [(null? (cdr l)) x]
+;        [else 
+;         (let ([p (sum-of l (last l))])
+;           (op (cond [(= 0 (car p)) 1] ; ligne probablement inutile
+;                    [(= 1 (car p)) x]
+;                    [else (let ([res (exponentiation-stock-op x (delete-greater (car p) l) lcomplete op)])
+;                            (stock res (last l) lcomplete) res)])
+;              (cond [(= 1 (cadr p)) x]
+;                    [else (let ([res (exponentiation-stock-op x (delete-greater (cadr p) l) lcomplete op)])
+;                            (stock res (last l) lcomplete) res)])))]))
+;
+;
+;(define (exponentiation-init-op x l op)
+;  (let ([ll (create-list-of-list l l)])
+;    (exponentiation-stock-op x l ll op)))
+;
+;(exponentiation-init-op 3 '(1 2 3) *) ;; 3³=27 
+;(exponentiation-init-op 2 '(1 2 3 5 8) *) ;; 2⁸=256
+
+
+;;-----------------------------generation---------------------------------
+
+;(number->string 3)
+;(string->symbol (string-append "x" (number->string 3)))
+;(symbol? x3)
+;(symbol? 'x3)
+
+(define (constr-list-4-let x i val)
+  (list (list (string->symbol (string-append x (number->string i))) 
+                        val)))
+
+;(constr-list-4-let "x" 3 '(+ 3 3))
+
+
+;(cons 'let (cons (list (list 
+;                        (string->symbol (string-append "x" (number->string 3))) 
+;                        3)) 
+;                 (list (string->symbol (string-append "x" (number->string 3))))))
+;                  
+;                  
+;                  
+;(define l '(let* ([(string->symbol (string-append "x" (number->string 3))) 10])))
+;l
+
+
+;good!:
+
+;(define (constr-function val op x l)
+;  (let* ([nom (string->symbol (string-append "exp" (number->string val)))]
+;         [name (cons 'define (cons (list nom 'mult 'x) (list 'x)))])
+;    name))
+
+;(list->symbol (constr-function 10 * 2 '(1 2)))
+
+
+
+;(define l (constr-function 10 * 2 '(1 2)))  ;; 'entete' de la fonction
+
+
+
+(define (constr-function val op x l)
+  (let* ([nom (string->symbol (string-append "exp" (number->string val)))]
+         [name (cons 'define (cons (list nom 'mult 'x) l))])
+    name))
+
+(define l (constr-function 10 * 2 '(1 2)))
+
+l
+
+  
+
+
+(define (constr-let op l x)
+  (if (null? l)
+      l
+      (cons (cons (string->symbol (string-append "x" (number->string (car (car l))))) 
+                  (list 'mult 
+                        (string->symbol (string-append "x" (number->string (cadr (car l)))))
+                        (string->symbol (string-append "x" (number->string(cadr (cdr (car l))))))))
+            (constr-let op (cdr l) x))))
+
+
+
+(define l2 (constr-let * '((1 0 0)) 'x))
+l2
+(define l3 (constr-let * '() 'x))
+l3
+
+(define (init-constr-let op l x)
+  (cons 'let* (list(cons 
+                    (cons (string->symbol (string-append "x" (number->string (car (car l))))) '(x))
+                    (cons (constr-let op (cdr l) x) '(x))))))
+
+(define l1 (init-constr-let * '((1 0 0) (2 1 1) (3 2 1) (5 3 2)) 'x))
+l1
+
+
+
+
+
+(define (init-constr-let2 op l x)
+  (cons 'let* (list (cons (string->symbol (string-append "x" (number->string (car (car l))))) '(x)))))
+
+
+(define (constr-let-final op ldeb lfin x)
+  (if (null? lfin)
+      (append ldeb '(x))
+      (constr-let-final op (append ldeb (list (car lfin))) (cdr lfin) x)))
+
+
+(define l5 (constr-let-final * (init-constr-let2 * '((1 0 0) (2 1 1) (3 2 1) (5 3 2)) 'x) (constr-let * (cdr '((1 0 0) (2 1 1) (3 2 1) (5 3 2))) 'x) 'x))
+l5
+
+;((1 0 0) (2 1 1) (3 2 1) (5 3 2))
+
+
+
+(define (constrx op l x)
+  (if (null? l)
+      l
+      (cons (string->symbol (string-append "x" (number->string (car (car l))))) 
+                  (list (list 'mult 
+                        (string->symbol (string-append "x" (number->string (cadr (car l)))))
+                        (string->symbol (string-append "x" (number->string(cadr (cdr (car l)))))))))))
+            
+(define l4 (constrx * '((1 0 0)) 'x))
+;l4

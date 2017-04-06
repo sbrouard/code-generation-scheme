@@ -1,0 +1,243 @@
+#lang racket
+
+(require math/number-theory)
+
+
+(provide gen-min-string-eucl)
+(provide gen-min-string-eucl-aux)
+(provide gen-all-string-eucl)
+(provide search-min-length)
+(provide gen-string-eucl-aux)
+
+
+;;BINARY
+(define (gen-string-bin n)
+  (cond [(= n 1) '(1)]
+        [(even? n) (append (gen-string-bin (/ n 2)) (list n))]
+        [else (append (gen-string-bin (sub1 n)) (list n))]))
+
+
+(define (test-gen-bin)
+;  (and
+  (printf "1 : '(1)\n")
+  (printf "4 : '(1 2 4)\n")
+  (printf "87: '(1 2 4 5 10 20 21 42 43 86 87)\n")
+  (printf "5 : '(1 2 4 5)\n")
+  (printf "test:\n")
+  (values (gen-string-bin 1)
+          (gen-string-bin 4)
+          (gen-string-bin 87)
+          (gen-string-bin 5))
+  )
+
+;(test-gen-bin)
+
+;;DECOMPOSITION IN BASE 10
+(define (gen-string-unity n)
+  (cond [(= n 1) '(1)]
+        [(= n 2) '(1 2)]
+        [(= n 3) '(1 2 3)]
+        [(= n 4) '(1 2 4)]
+        [(= n 5) '(1 2 3 5)]
+        [(= n 6) '(1 2 4 6)]
+        [(= n 7) '(1 2 3 6 7)]
+        [(= n 8) '(1 2 4 8)]
+        [(= n 9) '(1 2 4 8 9)]
+        [(= n 0) '(1 2 3 5)]
+        ))
+
+
+(define (gen-string-compl n)
+  (cond [(= n 0) '()]
+        [(= n 1) '(2 3 5)]
+        [(= n 2) '(3 5)]
+        [(= n 3) '(5)]
+        [(= n 4) '(8)]
+        [(>= n 5) '()]
+        ))
+
+(define (gen-string-aux n)
+  (cond [(< n 10) (gen-string-unity n)]
+        [else (append (gen-string-unity (modulo n 10)) (gen-string-compl (modulo n 10)) (map (lambda (x) (* x 10)) (gen-string-aux (quotient n 10))))]))
+
+;(gen-string-aux 47)
+
+(define (gen-string-complete n p)
+  (cond [(zero? p) '()]  
+        [else
+         (if (zero? (modulo (quotient n (expt 10 (sub1 p))) 10))
+             (gen-string-complete n (sub1 p)) 
+             (append (list (* (quotient n (expt 10 (sub1 p))) (expt 10 (sub1 p)))) (gen-string-complete n (sub1 p))))]))
+
+;(gen-string-complete 887 2)
+
+(define (power-10 n)
+  (if (< n 10) 0
+      (add1 (power-10 (quotient n 10)))))
+
+;(power-10 87)
+;(power-10 1)
+;(power-10 1000)
+
+
+(define (gen-string n)
+  (append (gen-string-aux n) (gen-string-complete n (power-10 n))))
+
+;(gen-string 87)
+;(gen-string 873)
+
+(define (test-gen-string)
+  (printf "1 : '(1)\n")
+  (printf "4 : '(1 2 4)\n")
+  (printf "87: '(1 2 3 6 7 10 20 40 80 87)\n")
+  (printf "953 : '(1 2 3 5 10 20 30 50 100 200 400 800 900 950 953)\n")
+  (printf "test:\n")
+  (values (gen-string 1)
+          (gen-string 4)
+          (gen-string 87)
+          (gen-string 953)))
+
+;(test-gen-string)
+
+;(define (compare-methods)
+;  (
+;
+;(time (gen-string 800000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777777777777777770000000000000000000000000)) ;;plus lent que le binaire
+;(time (gen-string-bin 800000000000000000000000000000000000000000000000000000000000000000000077777777777777777777777777777777777770000000000000000000000000)) ;;meilleure version pour le moment
+;((lambda (r s t u)(s)) (values (time-apply gen-string '(8000000000000000000000000;
+(define (my-time proc n)
+  (call-with-values (lambda () (time-apply proc (list n))) (lambda (r s t u) s)))
+
+(define (test-time-aux-1 cpt proc1 proc2 n)
+  (if (< (my-time proc1 n) (my-time proc2 n))
+      (add1 cpt)
+      cpt))
+
+
+(define (test-time-aux-2 cpt proc1 proc2 n)
+  (if (> (my-time proc1 n) (my-time proc2 n))
+      (add1 cpt)
+      cpt))
+
+(define (test-time proc1 proc2)
+  (let* ([cpt1 0]
+         [cpt2 0]
+         [n1 737771812521001]
+         [n2 14594342968243894384983245828348542348954238942384958324589652484268534986243861478678604864084840848428184848342982643861036824628348942548438297638164349683246837841896438284968347178464860684680440646464005241]
+         [n3 8143100476314668479826444444444444444444444555555555555555555222222222244444444499999993962385248936396396396358294348419864138942683498524839458324894683498623869438962438964382498329636937613488796413]
+         [n4 (expt 2 50)]
+         [n5 4845496540006575702865673207273175021]
+         [n6 9845631487084089498498420498409849098450132106840316846812140606106121680498156089906504684016508946408416510306540684061060684061650489415604984064980646018949816480489046106884060984640980000055555555540231871205351038860490304805045080]
+         [n7 (expt 10 34)]
+         [n8 (+ (expt 10 21) (expt 2 41) )]
+         [n9 445996655742222222222222222222211111111111111333346464889489298498429849842984984292848942984984298498429842984298424284928249248924942984298249829492498294942984982902982012000448389472412450484544595639763044540832198465094979348478282815876248404465347063987385999484546846586784844554549484274254825752285282]
+         [n10 (expt 3 46)]
+         [n11 5555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555554444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444442222222222222222222222222222222222222222222222222222222222222111111111111111111111]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n1)] ;;on incrémente de 1 quand la fonction est plus rapide
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n1)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n2)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n2)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n3)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n3)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n4)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n4)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n5)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n5)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n6)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n6)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n7)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n7)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n8)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n8)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n9)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n9)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n10)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n10)]
+         [cpt1 (test-time-aux-1 cpt1 proc1 proc2 n11)]
+         [cpt2 (test-time-aux-2 cpt2 proc1 proc2 n11)])
+    (cond [(< cpt1 cpt2) (print "la fonction 2 est plus rapide")]
+          [(> cpt1 cpt2) (print "la fonction 1 est plus rapide")]
+          [else (print "les deux fonctions sont de meme rapidite")])))
+
+;(my-time gen-string 604616546046451301)
+;(test-time gen-string-bin gen-string) 
+;(- (my-time gen-string 80000000000000000000000000000000000000000460400000000000000000000000000000000000000) (my-time gen-string-bin 80000000000000000000000000000000000000000460400000000000000000000000000000000000000))
+;(gen-string 101);GEN STRING A UN PROBLEME QUAND ON A UNE PUISSANCE DE 10
+
+;;NEW METHOD
+
+
+(define (gen-string-eucl-aux n m l)
+  (cond [(and (= n 1) (= m 1)) (cons 1 l)]
+        [(< n 1) l]
+        [(= n m) (gen-string-eucl-aux n (ceiling (/ n 2)) l)]
+        [else (append (gen-string-eucl-aux (min n m) (- (max n m) (min n m)) l) (list (max n m)))]))
+
+;(gen-string-eucl-aux 52 18 '())
+;(gen-string-eucl-aux 52 (ceiling (/ 31 2)) '())
+
+
+(define (gen-all-string-eucl n m)
+  (cond [(= m 1) (list (gen-string-eucl-aux n 1 '()))]
+        [(= m (sub1 n)) (append (gen-all-string-eucl n (sub1 m)) (list (gen-string-eucl-aux n m '())))]
+        [else (append (gen-all-string-eucl n (sub1 m)) (list (gen-string-eucl-aux n m '())))]))
+
+;(gen-all-string-eucl 12 11)
+
+(define (search-min-length l l2)
+  (if (<= (length l) (length l2))
+      l
+      l2))
+
+(define (gen-min-string-eucl-aux l lmin)
+  (cond [(<= (length l) 1) lmin]
+        [else (gen-min-string-eucl-aux (cdr l) (search-min-length lmin (car l)))]))
+
+(define (gen-min-string-eucl n)
+  (gen-min-string-eucl-aux (gen-all-string-eucl n (sub1 n)) (first (gen-all-string-eucl n (sub1 n))))) 
+
+;(map length (gen-all-string-eucl 12 11))
+;(gen-min-string-eucl 8547)                                   
+;(gen-string-bin 8547)
+
+
+(define (gen-string-e-aux n m l)
+  (cond [(and (zero? m) (null? l)) (cons 1 l)]
+        [(and (zero? m) (= 1 (car l)) l)]
+        [(and (zero? m) (not (= 1 (car l)))) (gen-string-e-aux (sub1 n) m l)]
+        [else (append (gen-string-e-aux m (modulo n m) l) (list n))]))
+
+;(gen-string-e-aux 30 18 '())
+;
+;;;prime method
+;
+;(define (gen-prime lprime lstring)
+;
+;  (gen-prime lprime lstring
+;  ) 
+;)
+;  
+;
+;
+;
+;(define (l-gen-aux p n)
+;  (if (<= n 1) (list p)
+;      (cons p (l-gen p (sub1 n)))))
+;
+;(define (l-gen lprime lexp)
+;  (cond [(null? lprime) '()]
+;        [(= 1 (length lprime)) (l-gen-aux (car lprime) (car lexp))]
+;        [else (append (l-gen-aux (car lprime) (car lexp)) (l-gen (cdr lprime) (cdr lexp)))]))
+;
+;(l-gen (prime-divisors 120) (prime-exponents 120))
+;
+
+;(length (prime-divisors 120))
+
+
+;; generate all string
+
+;(define (gen-all n)
+;  (if (<= n 1) (list 1)
+;      (gen-all-aux n)))
+

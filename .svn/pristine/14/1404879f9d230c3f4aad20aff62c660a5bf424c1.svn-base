@@ -1,0 +1,195 @@
+#lang racket
+
+
+(require "./algo_scheme.rkt")
+;(require "./verif.rkt")
+
+
+
+; replace in the list l the element elt by new
+; ex : (replace 2 42 '(1 2 3)) -> '(1 42 3)
+(define (replace-in-list elt new l) ;elt -> int (new -> list)
+  (cond [(null? l) l]
+        [(list? (car l)) (cons (car l) (replace elt new (cdr l)))]
+        [(equal? elt (car l)) (cons new (replace-in-list elt new (cdr l)))]
+        [else (cons (car l) (replace-in-list elt new (cdr l)))]))
+
+;(replace-in-list 1 'x1 '(2 1 1))
+
+; replace in alist the element elt by new
+; ex : (replace 1 x1 '((2 1 1) (3 2 1))) -> '((2 x1 x1) (3 2 x1))
+(define (replace elt new alist)
+  (if (null? alist)
+      alist
+      (cons (replace-in-list elt new (car alist)) (replace elt new (cdr alist)))))
+
+
+;(replace  2 'x2 '((1 0 0) (2 1 1) (3 2 1)))
+
+
+
+
+
+
+
+;; l: addlist with only elements smaller than n
+;;; Returns a list so that the first element is "n" and the sum of the two last elements equals "n"
+;(define (create-sumlist l n)  ;; '(1) 2 -> '(2 1 1)
+;  (cond [(null? l) (raise "ERROR : probably not an add-list")] 
+;        [(= n (+ (car l) (last l))) (list n (car l) (last l))]
+;        [(> n (+ (car l) (last l))) (create-sumlist (cdr l) n)]
+;        [(< n (+ (car l) (last l))) (create-sumlist (remove (last l) l) n)]
+;         ))
+
+
+;;; addlist-fin: entire addlist at the begining, then the first element is removed until it is null
+;;; addlist-deb: null at the begining, then elements which have been removed in addlist-fin are added in addlist-deb
+;;; l2return: null at the begining
+;;; Returns the list "l2return" in which each element is a "create-sumlist"
+;(define (addlist2list-of-list addlist-fin addlist-deb l2return)
+;  (cond [(null? addlist-fin) l2return]
+;        [(= 1 (car addlist-fin)) (addlist2list-of-list (cdr addlist-fin) '(1) '((1 0 0)))]
+;        [else (addlist2list-of-list (cdr addlist-fin) (append addlist-deb 
+;                                                              (list (car addlist-fin))) 
+;                                    (append l2return 
+;                                            (list (create-sumlist addlist-deb (car addlist-fin)))))]))
+;
+
+
+;;;;;;;;;;;;;;;;  generation code C ;;;;;;;;;;;;;;;;
+
+(define (entete-file file)
+  (fprintf file "#include <stdio.h>\n")
+  (fprintf file "#include <stdlib.h>\n\n\n\n"))
+
+(define (entete-function file n)
+  (fprintf file "int exp~a(x){\n" n))
+
+
+
+; l = the end of an 'a-addlist'  ex : '((3 2 1) (5 3 2) (7 5 2))
+; find if a variable is used again to compute x**n = if n is in l
+; ex : (is-reused-variable? 2 '((3 2 1) (5 3 2))) -> #t
+(define (is-reused-variable? n l)
+  (cond [(null? l) #f]
+        [(equal? n (caddr (car l))) #t]
+        [(null? (cdr l)) #f]
+        [(or (equal? 'x (cadr l)) (number? (cadr l)) (equal? n (cadr (car l)))) #t]
+        [else (is-reused-variable? n (cdr l))]))
+
+
+;(is-reused-variable? 2 '((3 2 1) (5 3 2)))
+;(is-reused-variable? 1 '((5 3 2) (8 5 3)))
+;(is-reused-variable? 1 '((3 2 1)))
+;(is-reused-variable? 'x1 '((3 2 x1)))
+
+
+
+;new-variable : name of the variable where we put n ex : x5
+;alist  ex : '((1 0 0) (2 x1 x1) (3 x2 x1))
+;ex : (modify-variable-name '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x3 x3)) 3 'x2)
+; -> '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x2 x2))
+(define (modify-variable-name alist n new-variable)
+  (replace n new-variable alist))
+
+;(modify-variable-name '((1 0 0) (2 1 1) (3 2 1) (6 3 3)) 3 'x2)
+
+
+
+
+
+
+;;;;;;;; in-place ;;;;;;;;;;;;;;;;
+
+
+
+
+;;;;;;;; out-place ;;;;;;;;;;;;;;;
+
+; list  ex : '(3 x2 x1)
+; cariable-list ex : '() / '(x1 x2)
+; ex : (affectation-out '(5 x3 x2) '((10 5 5) (15 10 5)) '() file)  -> '(((10 x5 x5) (15 10 x5)) (x2 x3))
+; return : l; (car l) = alist, (cdr l) = variable-list
+(define (affectation-out list3 alist variable-list file)
+  (cond [(null? variable-list) 
+         
+         ;(modify-variable-name alist (car list3) (string->symbol (string-append "x" (number->string (car list3)))))
+         (fprintf file "int ~a = ~a * ~a;\n" (string->symbol (string-append "x" (number->string (car list3)))) (cadr list3) (caddr list3))
+         (let* ([variable-list1 (if (and (not (is-reused-variable? (cadr list3) (cdr alist))) (not (equal? 'x (cadr list3))) (not (number? (cadr list3))))
+                                 ;(if (not (is-reused-variable? (cadr list3) (cdr alist)))
+                                    (cons (cadr list3) variable-list)
+                                    variable-list)]
+                [variable-list2 (if (and (not (is-reused-variable? (caddr list3) (cdr alist))) (not (equal? (cadr list3) (caddr list3))) (not (equal? 'x (cadr list3))) (not (number? (cadr list3))))
+                                    ;(if (not (is-reused-variable? (caddr list3) (cdr alist)))
+                                    (cons (caddr list3) variable-list1)
+                                    variable-list1)]
+                [var-name (modify-variable-name alist (car list3) (string->symbol (string-append "x" (number->string (car list3)))))]
+                [l (list var-name variable-list2)])
+           l)
+           ;(print l))
+           
+         ;(cons (string->symbol (string-append "x" (number->string (car list)))) variable-list)
+         ]
+        [else ;(modify-variable-name alist (car list3) (car variable-list))
+              ;(remove (car variable-list) variable-list)
+              ;(print "else")
+              (fprintf file "~a = ~a * ~a;\n" (car variable-list)  (cadr list3) (caddr list3))
+              ;(remove (car variable-list) variable-list)]))
+              (let* ([a (modify-variable-name alist (car list3) (car variable-list))]
+                     [b (remove (car variable-list) variable-list)]
+                     [c (list a b) ])
+                c)]))
+  
+
+
+; alist == alist-end at the beginning
+;(define (all-affectation-out alist variable-list file)
+;  (cond [(not (null? alist)) (all-affectation-out (cdr alist) (affectation-out (car alist) alist variable-list file) file)]))
+;      
+
+(define (all-affectation-out alist variable-list file) ; pb tjs variable-list='()
+  (cond [(not (null? alist)) 
+         ;(print variable-list)
+         (let* ([l (affectation-out (car alist) alist variable-list file)])         
+           (all-affectation-out (cdr (car l)) (cadr l) file))]))
+      
+
+;(cadr '(((10 x5 x5) (15 10 x5)) (x2 x3)))
+
+
+;write the total file needed in c in file
+(define (complete-file-out file l)
+  (entete-file file)
+  (entete-function file (last l))
+  (all-affectation-out (addlist2list-of-list l l '()) '() file)
+  (fprintf file "}")
+  )
+
+
+
+
+
+;;;;;;;;;;;;;; test ;;;;;;;;;;;;;;;
+
+
+(define file (open-output-file "test.c"))
+;
+;(entete-file file)
+;(entete-function file 2)
+;(cdr (car (affectation-out '(1 x 1) '((1 x 1) (2 1 1)) '() file)))
+;(affectation-out '(5 x3 x2) '((10 5 5) (15 10 5)) '() file)
+;(affectation-out '(10 x5 x5) '((15 10 x5)) '(x2 x3) file)
+;(affectation-out (car (cdr (car '(((10 x5 x5) (15 10 x5)) (x2 x3)))))  (cdr (car '(((10 x5 x5) (15 10 x5)) (x2 x3))))  (cadr '(((10 x5 x5) (15 10 x5)) (x2 x3))) file)
+;(affectation-out '(5 x3 x2) '((10 5 5) (15 10 5)) (list 'x1) file)
+;(affectation-out '(1 0 0) '((1 0 0) (2 x1 x1) (3 x2 x1) (6 x3 x3)) (list (string->symbol (string-append "x" (number->string 42))) (string->symbol (string-append "x" (number->string 43)))))
+;(all-affectation-out '((1 x 1) (2 1 1) (3 2 1) (6 3 3)) '() file)
+;(all-affectation-out '((1 x 1) (2 1 1)) '() file)
+;(all-affectation-out '((1 x 1) (2 1 1) (3 2 1) (6 3 3)) '() file)
+;(all-affectation-out '((2 x1 x1) (4 2 2)) (list 'x1) file)
+;(all-affectation-out '((1 x 1) (2 1 1) (4 2 2)) (list) file)
+(complete-file-out file '(1 2 3 4))
+;(complete-file-out file '((1 x 1) (2 1 1) (3 2 1) (6 3 3)))
+;(complete-file-out file '((1 x 1) (2 1 1) (3 2 1) (6 3 3) (9 6 3)))
+
+;
+(close-output-port file)

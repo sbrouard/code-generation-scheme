@@ -1,0 +1,232 @@
+#lang racket
+
+(provide is-growing?)
+(provide is-sum?)
+(provide all-are-sum?)
+(provide result)
+(provide is-addlist?)
+
+(provide replace)
+(provide replace-list-of-list)
+(provide create-list-of-list)
+(provide result)
+(provide stock)
+(provide sum-of)
+(provide delete-greater)
+
+
+
+
+
+;; --------------Verif----------------------
+
+
+
+; #t = l is a strictly increasing list or null; #f = else
+(define (is-growing? l) 
+  (cond [(null? l) #t]
+        [(null? (cdr l)) #t]
+        [(= (car l) (cadr l)) #f]
+        [(> (car l) (cadr l)) #f]
+        [else (is-growing? (cdr l))]))
+
+
+
+; #t = x is the sum of 2 elements of the list l ; #f = else
+(define (is-sum? l x)
+  (cond [(null? l) #f]
+        [(= x (+ (car l) (last l))) #t]
+        [(< x (+ (car l) (last l))) (is-sum? (remove (last l) l) x)]
+        [(> x (+ (car l) (last l))) (is-sum? (cdr l) x)]
+        ))
+
+
+;; #t = all elts of l2 are sum of 2 elts of l1 and (or) l2 ; #f = else
+(define (all-are-sum? l1 l2) ;attention, l1 doit etre non vide (l1 contient car de l et l2 cdr de l) ;;inverser liste pr complexite lineaire et pas quadra.
+  (cond [(null? l2) #t]
+        [(null? l1) #f]
+        [(not (is-sum? l1 (car l2))) #f]
+        [else (all-are-sum? (append l1 (list (car l2))) (cdr l2))]))
+
+
+
+;general fonction of verification :
+; #t = l is an addlist ; #f = l is not an addlist
+(define (is-addlist? l)
+  (cond [(null? l) #f]
+        [(not (= 1 (car l))) #f]
+        [(not (is-growing? l)) #f]
+        [else (all-are-sum? (list (car l)) (cdr l))]))
+
+;(time (is-addlist? '(1 2 4 8 10 11 12 13 14 15 16 18 20 28 29 40 80 84 88)))
+
+
+
+
+
+
+
+
+
+
+;; ------------------- exponentiation -------------------
+
+
+
+; replace in the list l the element elt by new
+; ex : (replace 2 42 '(1 2 3)) -> '(1 42 3)
+(define (replace elt new l) ;elt -> int (new -> list)
+  (cond [(null? l) (raise "ERROR : elt is not in the list")]
+        [(list? (car l)) (cons (car l) (replace elt new (cdr l)))]
+        [(= elt (car l)) (cons new (cdr l))]
+        [else (cons (car l) (replace elt new (cdr l)))]))
+
+
+
+
+
+; l is an alist (list of lists
+; elt is a list (list in l)
+; replace in l elt by nex
+; ex : (replace-list-of-list '(2) 42 '((1) (2) (3))) -> '((1) 42 (3))
+(define (replace-list-of-list elt new l) 
+  (cond [(null? l) (raise "ERROR : elt is not in the list")]
+        [(= (car elt) (car (car l))) (cons new (cdr l))]
+        [else (cons (car l) (replace-list-of-list elt new (cdr l)))]))
+
+
+; l and lcomp must be the same list in the begining
+; replace each eement elt of l by (list elt)
+; ex : (create-list-of-list '(1 2 3) '(1 2 3)) -> '((1) (2) (3))
+(define (create-list-of-list l lcomp) 
+  (if (null? l)
+      lcomp
+      (create-list-of-list (cdr l) (replace (car l) (list (car l)) lcomp))))
+
+
+
+
+
+; return the result of x**n if it has already been computed
+; else : -1
+; the result of x**n is stocked in l after n (in the same list as n)
+;ex : (result 2 '((1) (2) (3))) -> -1
+; (result 2 '((1) (2 3) (3))) -> 3
+(define (result n lcomplete)
+  (cond [(null? lcomplete) (raise "ERROR : n is not in l")]
+        [(= (car (car lcomplete)) n)
+         (if (null? (cdr (car lcomplete)))
+          -1
+          (car (cdr (car lcomplete))))]
+        [else (result n (cdr lcomplete))]))
+
+
+
+
+; in l, stock res after elt in the list that begins by elt
+; ex : (stock 42 2 '((1) (2) (3))) -> '((1) (2 42) (3))
+(define (stock res elt lcomplete)
+  (cond [(null? lcomplete) (raise "ERROR : elt is not in l")]
+        [else (replace-list-of-list (list elt) (cons elt (list res)) lcomplete)]))
+        ;[(= elt (car (car lcomplete)))]
+
+(stock 42 2 '((1) (2) (3)))
+        
+        
+
+(define (exponentiation-stock x l lcomplete) ; code magnifique
+  (define n (result (last l) lcomplete))
+  (cond [(not (is-addlist? l)) (raise "ERROR : require an add-list")]
+        ;[(not (null? (cdr (last l)))) (cdr (last l))] -> a modifier
+;        [(let ([n (result (last l) lcomplete)])
+;           (not (= n -1))) n]
+        [(not (= -1 n)) n]
+        [(null? (cdr l)) x]
+        [else 
+         (let ([p (sum-of l (last l))])
+           (* (cond [(= 0 (car p)) 1] ; ligne probablement inutile
+                    [(= 1 (car p)) x]
+                    [else (let ([res (exponentiation-stock x (delete-greater (car p) l) lcomplete)])
+                            (stock res (last l) lcomplete) res)])
+              (cond [(= 1 (cadr p)) x]
+                    [else (let ([res (exponentiation-stock x (delete-greater (cadr p) l) lcomplete)])
+                            (stock res (last l) lcomplete) res)])))]))
+
+(define (exponentiation-init x l)
+  (let ([ll (create-list-of-list l l)])
+    (exponentiation-stock x l ll)))
+
+;(exponentiation-init 3 '(1 2 3)) ;; 3³=27 
+;(exponentiation-init 2 '(1 2 3 5 8)) ;; 2⁸=256
+
+
+
+
+
+
+
+
+;; ---------exponentiation  (naif)--------------------
+
+(define (sum-of l x)  ;; return two elements of l which sum gives x
+  (cond [(null? l) (raise "ERROR")]
+        ;[(null? (cdr l)) (list 0 (car l))] ;; ligne a supprimer (a verifier)
+        [(= x (+ (car l) (last l))) (list (car l) (last l))]
+        [(< x (+ (car l) (last l))) (sum-of (remove (last l) l) x)]
+        [(> x (+ (car l) (last l))) (sum-of (cdr l) x)]
+        ))
+
+;(sum-of '(1) 2)
+
+(define (delete-greater x l) ; deletes all elements greater than x in l 
+  (cond [(null? l) l]
+        [(= (last l) x) l] ; l must be growing
+        [else (delete-greater x (remove x l <))]))
+
+;(delete-greater 3 '(1 2 3 4 5))
+
+(define (exponentiation x l) ; code moche
+  (cond [(not (is-addlist? l)) (raise "ERROR : require an add-list")]
+        [(null? (cdr l)) x]
+        [else 
+         (let ([p (sum-of l (last l))])
+           (* (cond [(= 1 (car p)) x]
+                    [else (exponentiation x (delete-greater (car p) l))])
+              (cond [(= 1 (cadr p)) x]
+                    [(exponentiation x (delete-greater (cadr p) l))])))]))
+
+;(exponentiation 3 '(1 2 3)) ;; 3³=27 
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;  Unused functions (for exponentiation) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;(define (sum-of-list-of-list l x)  ;; return two elements of l which sum gives x
+;  (cond [(null? l) (raise "ERROR")]
+;        ;[(null? (cdr l)) (list 0 (car l))] ;; ligne a supprimer (a verifier)
+;        [(= x (+ (car (car l)) (car (last l)))) (list (car (car l)) (car (last l)))]
+;        [(< x (+ (car (car l)) (car (last l)))) (sum-of-list-of-list (remove (last l) l) x)]
+;        [(> x (+ (car (car l)) (car (last l)))) (sum-of-list-of-list (cdr l) x)]
+;        ))
+
+
+;(define (delete-greater-list-of-list x l) ; deletes all elements greater than x in l 
+;  (cond [(null? l) l]
+;        [(= (car (last l)) x) l] ; l must be growing
+;        [else (delete-greater x (remove x l <))]))
+;
+;(delete-greater-list-of-list 2 '((1) (2) (3)))
+
+
+
+
+
+
+
+
+;;; LISTE DE CHOSES A AMELIORER
+;;; 1) POUR LA PARTIE VÉRIF : INVERSER LISTE (POUR COMPLEXITÉ LINEAIRE AU LIEU DE QUADRATIQUE)
+;;; 2) UTILISER (ASSOC L ...) QUI PERMET DE RETROUVER UNE CLÉ DANS UNE LISTE D'ASSOCIATION (=DICTIONNAIRE)
+

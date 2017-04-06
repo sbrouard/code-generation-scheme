@@ -1,0 +1,21 @@
+#lang racket
+
+(require "verif.rkt")
+
+
+;;;;;;;;;;;  Test of verif  ;;;;;;;;;;;;;;;;;;;;;
+
+
+(define (test-is-growing)
+  (printf "Test of is-growing? ... ")
+  (cond [(not (is-growing? '(1 2 3 4))) (printf "FAILED")]
+        [(is-growing? '( 4 2 3 5)) (printf "FAILED")]
+        [(not (is-growing? '())) (printf "FAILED")]
+        [(is-growing? '(1 2 5 3 8 9)) (printf "FAILED")]
+        [(not (is-growing? '(42)))  (printf "FAILED")]
+        [(is-growing? '(2 3 4 5 1)) (printf "FAILED")]
+        [(is-growing? '(1 2 2 3)) (printf "FAILED")]
+        [else (printf "PASSED")])
+  (printf "\n"))
+
+(test-is-growing)
